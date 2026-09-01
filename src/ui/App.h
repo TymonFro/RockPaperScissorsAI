@@ -24,6 +24,8 @@ private:
     void update();
     void draw();
     void playRound(Move playerMove);
+    void switchUser(const std::string& username);
+    void requestSwitchUser(const std::string& username);
 
     sf::RenderWindow window_;
     sf::Clock deltaClock_;
@@ -36,6 +38,14 @@ private:
     std::optional<Move> lastAIMove_;
     int roundNumber_ = 0;
 
-
+    std::string currentUser_ = "default";
+    bool showNewUserInput = false;
+    char newUserInput[32] = "";
+    bool wasSaved = false;
+    std::string pendingUser_;
+    bool confirmSwitchPending_ = false;
+    bool confirmClosePending_ = false;
     std::deque<GameEvent>gamesHistory;
+
+    std::vector<std::string> listUsers() ;
 };

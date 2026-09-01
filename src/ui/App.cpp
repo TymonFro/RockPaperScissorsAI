@@ -2,9 +2,25 @@
 
 #include <stdexcept>
 #include <deque>
+#include <filesystem>
+#include <algorithm>
+#include <iostream>
+#include <cctype>
 
 #include "imgui-SFML.h"
 #include "imgui.h"
+
+using namespace std;
+
+std::string sanitizeUsername(const std::string& raw) {
+    std::string result;
+    for (char c : raw) {
+        if (std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '-') {
+            result += c;
+        }
+    }
+    return result;
+}
 
 App::App() : window_(sf::VideoMode({900, 600}), "RPS - Kamien Papier Nozyce") {
     window_.setFramerateLimit(60);
@@ -12,6 +28,7 @@ App::App() : window_(sf::VideoMode({900, 600}), "RPS - Kamien Papier Nozyce") {
         throw std::runtime_error("Nie udalo sie zainicjalizowac ImGui-SFML");
     }
 
+    ImGui::GetIO().IniFilename = nullptr;
     ImGui::GetStyle().Colors[ImGuiCol_PlotHistogram] = ImVec4(0.1f, 0.5f, 0.6f, 1.0f);
 }
 
@@ -35,13 +52,55 @@ void App::processEvents() {
     while (const auto event = window_.pollEvent()) {
         ImGui::SFML::ProcessEvent(window_, *event);
         if (event->is<sf::Event::Closed>()) {
-            window_.close();
+            if(!wasSaved && currentUser_ != "default") {
+                pendingUser_ = currentUser_;
+                confirmClosePending_ = true;
+            } else {
+                window_.close();
+            }
         }
     }
 }
 
 void App::update() {
     ImGui::SFML::Update(window_, deltaClock_.restart());
+}
+
+vector<string> App::listUsers() {
+    filesystem::create_directories("users");
+
+    vector<string> users;
+    for (const auto& entry : filesystem::directory_iterator("users")) {
+        if (entry.path().extension() == ".txt") {
+            users.push_back(entry.path().stem().string());
+        }
+    }
+
+    sort(users.begin(), users.end());
+    // for (const auto& user : users) {
+    //     cout << "Znaleziono uzytkownika: " << user << endl;
+    // }
+    return users;
+}
+
+void App::switchUser(const std::string& username) {
+    currentUser_ = username;
+    neuralOpponent_.loadFromFile("users/" + username + ".txt");
+    stats_ = Stats();
+    lastRandomMove_.reset();
+    lastAIMove_.reset();
+    roundNumber_ = 0;
+    gamesHistory.clear();
+    wasSaved = true;
+}
+
+void App::requestSwitchUser(const std::string& username) {
+    if(!wasSaved && currentUser_ != "default") {
+        pendingUser_ = username;
+        confirmSwitchPending_ = true;
+    } else {
+        switchUser(username);
+    }
 }
 
 void App::draw() {
@@ -51,6 +110,127 @@ void App::draw() {
     const ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
     ImGui::Begin("RPS", nullptr, flags);
+
+    // save warning popups
+
+    if(confirmSwitchPending_) {
+        ImGui::OpenPopup("Nie zapisano sieci");
+        confirmSwitchPending_ = false;
+    }
+
+    if(ImGui::BeginPopupModal("Nie zapisano sieci", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Nie zapisano sieci dla uzytkownika \"%s\". Czy chcesz zapisac?", currentUser_.c_str());
+        ImGui::Separator();
+
+        if (ImGui::Button("Tak, zapisz")) {
+            neuralOpponent_.saveToFile("users/" + currentUser_ + ".txt");
+            switchUser(pendingUser_);
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Nie, nie zapisuj")) {
+            switchUser(pendingUser_);
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Anuluj")) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    if (confirmClosePending_) {
+        ImGui::OpenPopup("Zamknac bez zapisu?");
+        confirmClosePending_ = false;
+    }
+
+    if (ImGui::BeginPopupModal("Zamknac bez zapisu?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Nie zapisano sieci dla uzytkownika \"%s\". Co zrobic?", currentUser_.c_str());
+        ImGui::Separator();
+
+        if (ImGui::Button("Zapisz i zamknij")) {
+            neuralOpponent_.saveToFile("users/" + currentUser_ + ".txt");
+            window_.close();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Zamknij bez zapisu")) {
+            window_.close();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Anuluj")) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+
+    // Uzytkownicy menu
+
+    ImGui::Text("Uzytkownik:");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(200.0f);
+    if (ImGui::BeginCombo("##User", currentUser_.c_str())){
+        for (const std::string& user : listUsers()) {
+            bool selected = user == currentUser_;
+            if (ImGui::Selectable(user.c_str(), selected)) {
+                requestSwitchUser(user);
+            }
+        }
+        ImGui::EndCombo();
+    }
+
+    ImGui::SameLine();
+    if(currentUser_ != "default") {
+        if (ImGui::Button("Usun uzytkownika")) {
+            ImGui::OpenPopup("Usun uzytkownika?");
+        }
+    }
+    
+    if (ImGui::BeginPopupModal("Usun uzytkownika?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Czy na pewno usunac uzytkownika \"%s\"?", currentUser_.c_str());
+        ImGui::Separator();
+
+        if (ImGui::Button("Tak, usun")) {
+            std::filesystem::remove("users/" + currentUser_ + ".txt");
+            switchUser("default");
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Anuluj")) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Nowy uzytkownik")) {
+        showNewUserInput = 1;
+        newUserInput[0] = '\0';
+    }
+
+    ImGui::SameLine();
+    if (showNewUserInput) {
+        ImGui::SetNextItemWidth(200.0f);
+        ImGui::InputText("##Nazwa", newUserInput, sizeof(newUserInput));
+        ImGui::SameLine();
+        if (ImGui::Button("Utworz") || ImGui::IsKeyPressed(ImGuiKey_Enter, 0)) {
+            std::string name = sanitizeUsername(newUserInput);
+            if (!name.empty()) {
+                requestSwitchUser(name);
+                showNewUserInput = 0;
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Anuluj") || ImGui::IsKeyPressed(ImGuiKey_Escape, 0)) {
+            showNewUserInput = 0;
+        }
+    }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
 
     // Gorny rzad: dwa panele obok siebie (losowy przeciwnik / AI).
     const float panelWidth = ImGui::GetContentRegionAvail().x / 2.f - 8.f;
@@ -121,10 +301,18 @@ void App::draw() {
 
     ImGui::EndChild();
 
+    ImGui::Spacing();
+    if(ImGui::Button("Zapisz siec", ImVec2(100, 30)) || (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_S, 0))) {
+        neuralOpponent_.saveToFile("users/" + currentUser_ + ".txt");
+        wasSaved = true;
+    }
+
     ImGui::End();
 }
 
 void App::playRound(Move playerMove) {
+    wasSaved = false;
+
     const Move randomMove = randomOpponent_.pick();
     const Move aiMove = neuralOpponent_.predict();
     neuralOpponent_.learn(aiMove, playerMove);

@@ -1,5 +1,12 @@
 #pragma once
-#include<bits/stdc++.h>
+#include <vector>
+#include <cmath>      // exp, sqrt
+#include <algorithm>  // max
+#include <random>     // mt19937, uniform_real_distribution
+#include <chrono>     // steady_clock
+#include <fstream>    // ifstream, ofstream
+#include <iomanip>    // setprecision
+#include <string>
 #define F(I,K) for(int I = 0; I<(int)K;I++)
 #define F1(I,K) for(int I = 1; I<=(int)K;I++)
 using namespace std;
@@ -20,7 +27,7 @@ const int layersNum = 3;
 const float eps = 1e-8;
 
 // Adam
-const float beta1 = 0.1;
+const float beta1 = 0.2;
 const float beta2 = 0.999;
 inline int adamStep = 0;
 inline float beta1_pow = 1.0;
@@ -218,7 +225,7 @@ inline void genNet(Network &net){
     }
 }
 
-inline void saveNet(Network &net, string filename = "defaultNet.txt"){
+inline void saveNet(Network &net, string filename = "users/defaultNet.txt"){
     ofstream fout(filename);
     fout << setprecision(9);
     F(i,layersNum){
@@ -242,7 +249,7 @@ inline void saveNet(Network &net, string filename = "defaultNet.txt"){
     fout.close();
 }
 
-inline void loadNet(Network &loaded, string filename = "defaultNet.txt"){
+inline void loadNet(Network &loaded, string filename = "users/defaultNet.txt"){
     ifstream fin(filename);
     
     if(!fin.good()){

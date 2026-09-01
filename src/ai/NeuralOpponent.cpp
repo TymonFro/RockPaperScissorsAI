@@ -1,4 +1,5 @@
 #include "NeuralOpponent.h"
+#include <filesystem>
 
 Move counterMove(Move m) {
     switch (m) {
@@ -10,7 +11,7 @@ Move counterMove(Move m) {
 }
 
 NeuralOpponent::NeuralOpponent(bool persist) : rng_(std::random_device{}()), persist_(persist) {
-    if (persist_) activateNetwork();
+    if (persist_) loadFromFile(currentPath_);
     else genNet(net);
     moveHistory.assign(histryWindow, {Move::Rock, Move::Rock});
     input.resize(inLayerSize);
@@ -19,9 +20,17 @@ NeuralOpponent::NeuralOpponent(bool persist) : rng_(std::random_device{}()), per
 
 }
 
-void NeuralOpponent::activateNetwork() {
-    // Load the neural network from a file
-    loadNet(net, "defaultNet.txt");
+void NeuralOpponent::loadFromFile(const std::string& path) {
+    std::filesystem::create_directories(std::filesystem::path(path).parent_path());
+    loadNet(net, path);
+    currentPath_ = path;
+    moveHistory.assign(histryWindow, {Move::Rock, Move::Rock});
+    roundsPlayed = 0;
+}
+
+void  NeuralOpponent::saveToFile(const std::string& path) {
+    std::filesystem::create_directories(std::filesystem::path(path).parent_path());
+    saveNet(net, path);
 }
 
 inline float evaluate(Move a, vector<float>& output) {
@@ -74,7 +83,4 @@ void NeuralOpponent::update(Move playerMove, Move aiMove) {
     moveHistory.pop_front();
     moveHistory.push_back({playerMove, aiMove});
     roundsPlayed++;
-    if (persist_ && roundsPlayed % 10 == 0) {
-        saveNet(net, "defaultNet.txt");
-    }
 }
