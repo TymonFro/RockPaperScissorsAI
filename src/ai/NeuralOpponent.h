@@ -1,9 +1,10 @@
 #pragma once
 #include <array>
 #include <random>
+#include <deque>
 #include "../game/Move.h"
 #include "Network.h"
-#include <deque>
+#include "CountTable.h"
 
 Move counterMove(Move m);
 
@@ -28,4 +29,12 @@ private:
     int roundsPlayed = 0;
     bool persist_ = true;
     std::string currentPath_ = "users/default.txt";
+
+    int neuralUsedCnt = 0;
+    static const int kPredictors = 10;
+    std::array<float, kPredictors> scores{};
+    std::array<Move, kPredictors> lastPredictions{};
+    int choosenPredictor = 0;
+    CountTable m0Table{1}, m1Table{3}, m2Table{9}, wslsTable{9};
+    std::array<int, 4> lastCtx;
 };

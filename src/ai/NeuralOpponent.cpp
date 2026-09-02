@@ -1,5 +1,6 @@
 #include "NeuralOpponent.h"
 #include <filesystem>
+#include <iostream>
 
 Move counterMove(Move m) {
     switch (m) {
@@ -42,6 +43,8 @@ inline float evaluate(Move a, vector<float>& output) {
 }
 
 Move NeuralOpponent::predict() {
+    // Network
+    
     int best = -1e6;
     float bestScore = -1e6;
 
@@ -61,7 +64,46 @@ Move NeuralOpponent::predict() {
         }
     }
 
-    return kAllMoves[best];
+    lastPredictions[0] = kAllMoves[best];
+
+    // other predictors
+
+    Move p1 = moveHistory[histryWindow - 1].first;
+    Move p2 = moveHistory[histryWindow - 2].first;
+    Outcome lastOut = resolve(moveHistory[histryWindow - 1].first, moveHistory[histryWindow - 1].second);
+
+    lastCtx[0] = 0;
+    lastCtx[1] = static_cast<int>(p1);
+    lastCtx[2] = static_cast<int>(p2) * 3 + static_cast<int>(p1);
+    lastCtx[3] = static_cast<int>(p1) * 3 + static_cast<int>(lastOut);
+
+    lastPredictions[1] = counterMove(m0Table.predict(lastCtx[0]));
+    lastPredictions[2] = counterMove(m1Table.predict(lastCtx[1]));
+    lastPredictions[3] = counterMove(m2Table.predict(lastCtx[2]));
+    lastPredictions[4] = counterMove(wslsTable.predict(lastCtx[3]));
+
+    lastPredictions[5] = m0Table.bestResponse(lastCtx[0]);
+    lastPredictions[6] = m1Table.bestResponse(lastCtx[1]);
+    lastPredictions[7] = m2Table.bestResponse(lastCtx[2]);
+    lastPredictions[8] = wslsTable.bestResponse(lastCtx[3]);
+
+    // rand Predictor
+
+    lastPredictions[kPredictors -1] = kAllMoves[std::uniform_int_distribution<int>(0, 2)(rng_)];
+
+    
+    for(int i = 0; i < kPredictors; ++i){
+        if(scores[i] > scores[choosenPredictor]){
+            choosenPredictor = i;
+        }
+    }
+
+    if(choosenPredictor == 0) {
+        neuralUsedCnt++;
+        cerr << "NeuralOpponent used " << neuralUsedCnt << " times" << endl;
+    }
+
+    return lastPredictions[choosenPredictor];
 }
 
 void NeuralOpponent::learn(Move aiMove, Move playersMove) {
@@ -80,6 +122,21 @@ void NeuralOpponent::learn(Move aiMove, Move playersMove) {
 }
 
 void NeuralOpponent::update(Move playerMove, Move aiMove) {
+    for(int i = 0; i < kPredictors; ++i){
+        switch(resolve(lastPredictions[i], playerMove)){
+            case Outcome::Win: scores[i] = scores[i]*0.9f + 1.0f; break;
+            case Outcome::Loss: scores[i] = scores[i]*0.9f - 1.0f; break;
+            case Outcome::Draw: scores[i] = scores[i]*0.9f + 0.0f; break;
+        }
+    }
+    scores[kPredictors -1] = 0;
+
+    m0Table.update(lastCtx[0], playerMove);
+    m1Table.update(lastCtx[1], playerMove);
+    m2Table.update(lastCtx[2], playerMove);
+    wslsTable.update(lastCtx[3], playerMove);
+
+
     moveHistory.pop_front();
     moveHistory.push_back({playerMove, aiMove});
     roundsPlayed++;
