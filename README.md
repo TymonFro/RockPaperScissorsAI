@@ -6,6 +6,8 @@ i **AI**, które uczy się Twoich nawyków i próbuje je wykorzystać. Interfejs
 Sieć neuronowa jest napisana od zera w C++ (bez bibliotek ML) — warstwy gęste, ReLU,
 propagacja wsteczna, optymalizator Adam, uczenie online po każdej rundzie.
 
+![alt text](assets/image.png)
+
 <!-- ## Jak działa AI
 
 Ruch wybiera **zespół predyktorów**, nie sama sieć:
