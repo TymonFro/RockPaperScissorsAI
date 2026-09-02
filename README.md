@@ -1,3 +1,5 @@
+[English](README.en.md) | [Polski](README.md)
+
 # RPS — kamień, papier, nożyce z uczącym się AI
 
 Gra, w której grasz jednocześnie z dwoma przeciwnikami: **losowym** (punkt odniesienia)
