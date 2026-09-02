@@ -7,6 +7,7 @@
 #include <fstream>    // ifstream, ofstream
 #include <iomanip>    // setprecision
 #include <string>
+#include <filesystem>
 #define F(I,K) for(int I = 0; I<(int)K;I++)
 #define F1(I,K) for(int I = 1; I<=(int)K;I++)
 using namespace std;
@@ -15,14 +16,15 @@ inline mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
 
 // Parameters of the neural network
 
-const int histryWindow = 8;
-const int inLayerSize = 6 * histryWindow;
-const int l1Neurons = 6 * histryWindow;
-const int l2Neurons = 64;
-const int l3Neurons = 32;
+const int encodeSize = 6;
+const int histryWindow = 6;
+const int inLayerSize = encodeSize * histryWindow;
+const int l1Neurons = encodeSize * histryWindow;
+const int l2Neurons = 96;
+const int l3Neurons = 48;
 const int outputNeurons = 3;
 const int maxLayerSize = 1024;  
-const float learningRate = 0.005;
+const float learningRate = 0.001;
 const int layersNum = 3;
 const float eps = 1e-8;
 
@@ -254,7 +256,13 @@ inline void loadNet(Network &loaded, string filename = "users/defaultNet.txt"){
     
     if(!fin.good()){
         fin.close();
-        genNet(loaded);
+        ifstream seed("data/seed.txt");
+        if(seed.good()){
+            seed.close();
+            loadNet(loaded, "data/seed.txt");
+        } else {
+            genNet(loaded);
+        }
         saveNet(loaded, filename);
         return;
     }

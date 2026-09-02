@@ -261,8 +261,8 @@ void App::draw() {
 
     // Porownanie.
     ImGui::Text("Runda: %d", roundNumber_);
-    ImGui::ProgressBar(r.winRateND(), ImVec2(-1, 0), "vs losowy");
-    ImGui::ProgressBar(a.winRateND(), ImVec2(-1, 0), "vs AI");
+    ImGui::ProgressBar(r.winRateND(), ImVec2(-1, 0), ("vs losowy (" + std::to_string(r.winRateND() * 100.f).substr(0, 4) + "%)").c_str());
+    ImGui::ProgressBar(a.winRateND(), ImVec2(-1, 0), ("vs AI (" + std::to_string(a.winRateND() * 100.f).substr(0, 4) + "%)").c_str());
 
     ImGui::Spacing();
     ImGui::Separator();

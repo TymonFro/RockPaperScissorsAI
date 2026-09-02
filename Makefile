@@ -16,7 +16,7 @@ BENCH_OBJ := $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(BENCH_SRC))
 
 DEP := $(OBJ:.o=.d) $(BENCH_OBJ:.o=.d)
 
-.PHONY: all clean run benchmark
+.PHONY: all clean run benchmark seed seed-eval
 
 all: $(BIN)
 
@@ -36,7 +36,26 @@ $(BUILD_DIR)/%.o: %.cpp
 
 -include $(DEP)
 
-run: all
+# Jawne przetrenowanie ziarna - zawsze przelicza od nowa.
+# Uruchom po kazdej zmianie architektury sieci albo hiperparametrow.
+seed: $(BENCH_BIN)
+	@mkdir -p data
+	./$(BENCH_BIN) --train-seed data/seed.txt
+
+# Ziarno do UCZCIWEJ oceny: trenowane bez przeciwnikow, ktorymi potem mierzymy.
+# Nie uzywane przez gre - tylko do porownan w benchmarku.
+seed-eval: $(BENCH_BIN)
+	@mkdir -p data
+	./$(BENCH_BIN) --train-seed data/seed_eval.txt --holdout
+
+# Automatyczne wygenerowanie ziarna, ale TYLKO jesli pliku jeszcze nie ma.
+# $(BENCH_BIN) jest zaleznoscia order-only (znak |), wiec samo przebudowanie benchmarku
+# nie wywoluje ponownego treningu - inaczej ziarno zmienialoby sie po kazdej rekompilacji.
+data/seed.txt: | $(BENCH_BIN)
+	@mkdir -p data
+	./$(BENCH_BIN) --train-seed data/seed.txt
+
+run: all data/seed.txt
 	./$(BIN)
 
 clean:

@@ -46,9 +46,9 @@ Move NeuralOpponent::predict() {
     float bestScore = -1e6;
 
     input.assign(inLayerSize, 0.0f);
-    for (int i = 0; i < histryWindow; ++i) {
-        input[i * 6 + static_cast<int>(moveHistory[i].first)] = 1.0f; // Player's move
-        input[i * 6 + 3 + static_cast<int>(moveHistory[i].second)] = 1.0f; // AI's move
+    for (int i = max(0, histryWindow - roundsPlayed); i < histryWindow; ++i) {
+        input[i * encodeSize + static_cast<int>(moveHistory[i].first)] = 1.0f; // Player's move
+        input[i * encodeSize + 3 + static_cast<int>(moveHistory[i].second)] = 1.0f; // AI's move
     }
 
     net.forwardPropagation(input);

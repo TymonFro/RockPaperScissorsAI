@@ -1,6 +1,7 @@
 build/
 bin/
 users/
+data/
 rps
 imgui.ini
 benchmark
