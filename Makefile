@@ -16,7 +16,7 @@ BENCH_OBJ := $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(BENCH_SRC))
 
 DEP := $(OBJ:.o=.d) $(BENCH_OBJ:.o=.d)
 
-.PHONY: all clean run benchmark seed seed-eval
+.PHONY: all clean run benchmark seed seed-eval windows linux-dist precompiled
 
 all: $(BIN)
 
@@ -54,6 +54,20 @@ seed-eval: $(BENCH_BIN)
 data/seed.txt: | $(BENCH_BIN)
 	@mkdir -p data
 	./$(BENCH_BIN) --train-seed data/seed.txt
+
+# --- dystrybucja ---
+# Windows: cross-kompilacja statycznego .exe (szczegoly w tools/build-windows.sh)
+windows: data/seed.txt
+	./tools/build-windows.sh
+
+# Linux: binarka + ziarno w jednym folderze
+linux-dist: all data/seed.txt
+	@mkdir -p precompiled/linux/data
+	cp $(BIN) precompiled/linux/
+	cp data/seed.txt precompiled/linux/data/
+	@echo "Gotowe: precompiled/linux/"
+
+precompiled: linux-dist windows
 
 run: all data/seed.txt
 	./$(BIN)

@@ -52,7 +52,7 @@ void App::processEvents() {
     while (const auto event = window_.pollEvent()) {
         ImGui::SFML::ProcessEvent(window_, *event);
         if (event->is<sf::Event::Closed>()) {
-            if(!wasSaved && currentUser_ != "default") {
+            if(!wasSaved) {
                 pendingUser_ = currentUser_;
                 confirmClosePending_ = true;
             } else {
@@ -83,19 +83,24 @@ vector<string> App::listUsers() {
     return users;
 }
 
-void App::switchUser(const std::string& username) {
-    currentUser_ = username;
-    neuralOpponent_.loadFromFile("users/" + username + ".txt");
+void App::resetSession() {
     stats_ = Stats();
     lastRandomMove_.reset();
     lastAIMove_.reset();
     roundNumber_ = 0;
     gamesHistory.clear();
+}
+
+
+void App::switchUser(const std::string& username) {
+    currentUser_ = username;
+    neuralOpponent_.loadFromFile("users/" + username + ".txt");
+    resetSession();
     wasSaved = true;
 }
 
 void App::requestSwitchUser(const std::string& username) {
-    if(!wasSaved && currentUser_ != "default") {
+    if(!wasSaved) {
         pendingUser_ = username;
         confirmSwitchPending_ = true;
     } else {
@@ -306,6 +311,12 @@ void App::draw() {
         neuralOpponent_.saveToFile("users/" + currentUser_ + ".txt");
         wasSaved = true;
     }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Resetuj statystyki", ImVec2(160, 30))) {
+        resetSession();
+    }
+
 
     ImGui::End();
 }

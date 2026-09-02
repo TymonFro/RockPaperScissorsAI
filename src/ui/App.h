@@ -24,6 +24,7 @@ private:
     void update();
     void draw();
     void playRound(Move playerMove);
+    void resetSession();
     void switchUser(const std::string& username);
     void requestSwitchUser(const std::string& username);
 
@@ -41,7 +42,7 @@ private:
     std::string currentUser_ = "default";
     bool showNewUserInput = false;
     char newUserInput[32] = "";
-    bool wasSaved = false;
+    bool wasSaved = 1;
     std::string pendingUser_;
     bool confirmSwitchPending_ = false;
     bool confirmClosePending_ = false;

@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <vector>
+#include <iostream>
 #include "../game/Move.h"
 
 struct CountTable {
@@ -37,4 +38,20 @@ struct CountTable {
         for (int i = 0; i < 3; ++i) rows[ctx][i] *= 0.97f;
         rows[ctx][static_cast<int>(actual)] += 1.0f;
     }
+
+    void clear() { for (auto& row : rows) row = {0.0f, 0.0f, 0.0f}; }
+
+    void save(std::ostream& os) const {
+        for (const auto& row : rows)
+            for (float v : row) os << v << ' ';
+        os << '\n';
+    }
+
+    bool load(std::istream& is) {
+        for (auto& row : rows)
+            for (float& v : row)
+                if (!(is >> v)) return false;
+        return true;
+    }
+
 };

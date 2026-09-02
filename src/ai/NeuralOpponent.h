@@ -31,7 +31,7 @@ private:
     std::string currentPath_ = "users/default.txt";
 
     int neuralUsedCnt = 0;
-    static const int kPredictors = 10;
+    static const int kPredictors = 9;
     std::array<float, kPredictors> scores{};
     std::array<Move, kPredictors> lastPredictions{};
     int choosenPredictor = 0;

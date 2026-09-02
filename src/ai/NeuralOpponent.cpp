@@ -27,11 +27,27 @@ void NeuralOpponent::loadFromFile(const std::string& path) {
     currentPath_ = path;
     moveHistory.assign(histryWindow, {Move::Rock, Move::Rock});
     roundsPlayed = 0;
+    scores.fill(0.0f);
+    m0Table.clear(); m1Table.clear(); m2Table.clear(); wslsTable.clear();
+
+    std::ifstream fin(path + ".tables");
+    if (fin.good()) {
+        if (!(m0Table.load(fin) && m1Table.load(fin) && m2Table.load(fin) && wslsTable.load(fin))) {
+            m0Table.clear(); m1Table.clear(); m2Table.clear(); wslsTable.clear();
+        }
+    }
+
 }
 
 void  NeuralOpponent::saveToFile(const std::string& path) {
     std::filesystem::create_directories(std::filesystem::path(path).parent_path());
     saveNet(net, path);
+    std::ofstream fout(path + ".tables");
+    m0Table.save(fout);
+    m1Table.save(fout);
+    m2Table.save(fout);
+    wslsTable.save(fout);
+    fout.close();
 }
 
 inline float evaluate(Move a, vector<float>& output) {
@@ -77,15 +93,22 @@ Move NeuralOpponent::predict() {
     lastCtx[2] = static_cast<int>(p2) * 3 + static_cast<int>(p1);
     lastCtx[3] = static_cast<int>(p1) * 3 + static_cast<int>(lastOut);
 
-    lastPredictions[1] = counterMove(m0Table.predict(lastCtx[0]));
+    //lastPredictions[1] = counterMove(m0Table.predict(lastCtx[0]));
     lastPredictions[2] = counterMove(m1Table.predict(lastCtx[1]));
     lastPredictions[3] = counterMove(m2Table.predict(lastCtx[2]));
     lastPredictions[4] = counterMove(wslsTable.predict(lastCtx[3]));
 
-    lastPredictions[5] = m0Table.bestResponse(lastCtx[0]);
-    lastPredictions[6] = m1Table.bestResponse(lastCtx[1]);
-    lastPredictions[7] = m2Table.bestResponse(lastCtx[2]);
-    lastPredictions[8] = wslsTable.bestResponse(lastCtx[3]);
+    // lastPredictions[5] = m0Table.bestResponse(lastCtx[0]);
+    lastPredictions[5] = m1Table.bestResponse(lastCtx[1]);
+    lastPredictions[6] = m2Table.bestResponse(lastCtx[2]);
+    lastPredictions[7] = wslsTable.bestResponse(lastCtx[3]);
+
+    lastPredictions[1] = counterMove(lastPredictions[3]);
+    // lastPredictions[10] = counterMove(lastPredictions[3]);
+    // lastPredictions[11] = counterMove(lastPredictions[4]);
+    // lastPredictions[12] = counterMove(counterMove(lastPredictions[2]));
+    // lastPredictions[13] = counterMove(counterMove(lastPredictions[3]));
+    // lastPredictions[14] = counterMove(counterMove(lastPredictions[4]));
 
     // rand Predictor
 
@@ -98,10 +121,18 @@ Move NeuralOpponent::predict() {
         }
     }
 
-    if(choosenPredictor == 0) {
-        neuralUsedCnt++;
-        cerr << "NeuralOpponent used " << neuralUsedCnt << " times" << endl;
-    }
+    // if(choosenPredictor == 0) {
+    //     neuralUsedCnt++;
+    //     cerr << "NeuralOpponent used " << neuralUsedCnt << " times" << endl;
+    // }
+
+    // float w[3] = {0.0f, 0.0f, 0.0f}; // glosowanie
+    // for (int i = 0; i < kPredictors; ++i) {
+    //     w[static_cast<int>(lastPredictions[i])] += std::exp(scores[i]);
+    // }
+    // int bestMove = 0;
+    // for (int i = 1; i < 3; ++i) if (w[i] > w[bestMove]) bestMove = i;
+    // return kAllMoves[bestMove];
 
     return lastPredictions[choosenPredictor];
 }

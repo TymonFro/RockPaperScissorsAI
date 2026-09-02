@@ -289,15 +289,15 @@ void trainSeed(const std::string& path, int blockRounds, int passes, bool holdou
                 total, training.size(), passes);
     std::printf("Wynik w trakcie treningu: gracz=%.1f%%  AI=%.1f%%  remisy=%.1f%%\n",
                 100.0 * win / total, 100.0 * loss / total, 100.0 * draw / total);
-    std::printf("\nUWAGA: te liczby to wynik NA DANYCH TRENINGOWYCH - nie mowia nic o jakosci ziarna.\n");
-    if (holdout) {
-        std::printf("Tryb --holdout: held-out sa STRATEGICZNY, STRATEGICZNY-LOSOWY, ANTY-AI i DRUGIE DNO.\n");
-    } else {
-        std::printf("Tryb pelny: jedynym uczciwym held-out jest DRUGIE DNO (nie ma go w zadnej mieszance).\n");
-    }
-    std::printf("Porownanie:\n"
-                "  ./bin/benchmark --repeats 20                     (start losowy)\n"
-                "  ./bin/benchmark --repeats 20 --seed %s (start z ziarna)\n", path.c_str());
+    //std::printf("\nUWAGA: te liczby to wynik NA DANYCH TRENINGOWYCH - nie mowia nic o jakosci ziarna.\n");
+    // if (holdout) {
+    //     std::printf("Tryb --holdout: held-out sa STRATEGICZNY, STRATEGICZNY-LOSOWY, ANTY-AI i DRUGIE DNO.\n");
+    // } else {
+    //     std::printf("Tryb pelny: jedynym uczciwym held-out jest DRUGIE DNO (nie ma go w zadnej mieszance).\n");
+    // }
+    // std::printf("Porownanie:\n"
+    //             "  ./bin/benchmark --repeats 20                     (start losowy)\n"
+    //             "  ./bin/benchmark --repeats 20 --seed %s (start z ziarna)\n", path.c_str());
 }
 
 int main(int argc, char** argv) {
@@ -328,8 +328,8 @@ int main(int argc, char** argv) {
 
     if (doTrain) {
         if (trainPath.empty()) trainPath = "data/seed.txt";
-        std::printf("Trening ziarna -> %s  (%s)\n", trainPath.c_str(),
-                    holdout ? "mieszanka BEZ przeciwnikow held-out" : "PELNA mieszanka");
+        // std::printf("Trening ziarna -> %s  (%s)\n", trainPath.c_str(),
+        //             holdout ? "mieszanka BEZ przeciwnikow held-out" : "PELNA mieszanka");
         trainSeed(trainPath, /*blockRounds=*/300, /*passes=*/4, holdout);
         return 0;
     }

@@ -1,8 +1,8 @@
 build/
 bin/
 users/
-data/
-rps
+/data/
+/rps
 imgui.ini
 benchmark
 defaultNet.txt
